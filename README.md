@@ -43,5 +43,4 @@ Já os contratantes podem:
 - Separação de dados entre prestadores e contratantes
 - Autenticação baseada em e-mail e senha
 
-## 📂 Estrutura do Projeto
 
