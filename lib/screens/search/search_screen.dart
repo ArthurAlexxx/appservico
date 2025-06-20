@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'filters_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({Key? key}) : super(key: key);
+  const SearchScreen({super.key});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -50,27 +50,34 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final workers = Provider.of<WorkerService>(context).workers;
     final filteredWorkers = _filterAndSearch(workers);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buscar Profissionais'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _openFilters,
-          ),
-        ],
-      ),
+          appBar: AppBar(
+      title: const Text('Buscar Profissionais'),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Colors.white,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.filter_list),
+          onPressed: _openFilters,
+        ),
+      ],   
+    ),
+
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(16.0),
             child: TextField(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Buscar por nome ou profissão',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: theme.colorScheme.surface.withOpacity(0.05),
               ),
               onChanged: (value) {
                 setState(() {
@@ -80,23 +87,36 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: filteredWorkers.length,
-              itemBuilder: (context, index) {
-                final worker = filteredWorkers[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: NetworkImage(worker.imageUrl),
+            child: filteredWorkers.isEmpty
+                ? Center(
+                    child: Text(
+                      'Nenhum profissional encontrado.',
+                      style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: filteredWorkers.length,
+                    itemBuilder: (context, index) {
+                      final worker = filteredWorkers[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(12),
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage(worker.imageUrl),
+                          ),
+                          title: Text(worker.name, style: theme.textTheme.titleMedium),
+                          subtitle: Text('${worker.profession} • ${worker.location}'),
+                          trailing: Icon(
+                            worker.isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: worker.isFavorite ? Colors.red : theme.iconTheme.color,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  title: Text(worker.name),
-                  subtitle: Text('${worker.profession} • ${worker.location}'),
-                  trailing: Icon(
-                    worker.isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: worker.isFavorite ? Colors.red : null,
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),

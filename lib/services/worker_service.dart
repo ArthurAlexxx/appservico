@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/worker_model.dart';
+import '../models/review_model.dart';
 
 class WorkerService with ChangeNotifier {
   List<Worker> _workers = [
@@ -12,6 +13,7 @@ class WorkerService with ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=500',
       services: ['Encanamento', 'Conserto de vazamentos', 'Instalação hidráulica'],
       location: 'São Paulo - SP',
+      reviews: [],
     ),
     Worker(
       id: '2',
@@ -22,6 +24,7 @@ class WorkerService with ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500',
       services: ['Instalação elétrica', 'Manutenção', 'Troca de disjuntores'],
       location: 'Rio de Janeiro - RJ',
+      reviews: [],
     ),
     Worker(
       id: '3',
@@ -32,6 +35,7 @@ class WorkerService with ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500',
       services: ['Pintura interna', 'Pintura externa', 'Texturização'],
       location: 'Belo Horizonte - MG',
+      reviews: [],
     ),
   ];
 
@@ -55,6 +59,7 @@ class WorkerService with ChangeNotifier {
           services: worker.services,
           location: worker.location,
           isFavorite: !worker.isFavorite,
+          reviews: worker.reviews,
         );
       }
       return worker;
@@ -64,5 +69,33 @@ class WorkerService with ChangeNotifier {
 
   List<Worker> getFavoriteWorkers() {
     return _workers.where((worker) => worker.isFavorite).toList();
+  }
+
+  void removeWorker(String id) {
+    _workers.removeWhere((worker) => worker.id == id);
+    notifyListeners();
+  }
+
+  void addReview(String workerId, Review review) {
+    final index = _workers.indexWhere((w) => w.id == workerId);
+    if (index != -1) {
+      final worker = _workers[index];
+      final updatedReviews = [...worker.reviews, review];
+      final newRating = updatedReviews.map((r) => r.rating).reduce((a, b) => a + b) / updatedReviews.length;
+
+      _workers[index] = Worker(
+        id: worker.id,
+        name: worker.name,
+        profession: worker.profession,
+        description: worker.description,
+        rating: newRating,
+        imageUrl: worker.imageUrl,
+        services: worker.services,
+        location: worker.location,
+        isFavorite: worker.isFavorite,
+        reviews: updatedReviews,
+      );
+      notifyListeners();
+    }
   }
 }

@@ -45,10 +45,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Editar Perfil')),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -78,6 +80,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 onPressed: _saveProfile,
                 icon: const Icon(Icons.save),
                 label: const Text('Salvar'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
               ),
             ],
           ),

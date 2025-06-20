@@ -5,10 +5,10 @@ class FiltersScreen extends StatefulWidget {
   final String? selectedProfession;
 
   const FiltersScreen({
-    Key? key,
+    super.key,
     this.selectedLocation,
     this.selectedProfession,
-  }) : super(key: key);
+  });
 
   @override
   State<FiltersScreen> createState() => _FiltersScreenState();
@@ -46,10 +46,16 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Filtros')),
+      appBar: AppBar(
+        title: const Text('Filtros'),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
             DropdownButtonFormField<String>(
@@ -58,21 +64,41 @@ class _FiltersScreenState extends State<FiltersScreen> {
                 return DropdownMenuItem(value: loc, child: Text(loc));
               }).toList(),
               onChanged: (value) => setState(() => _location = value),
-              decoration: const InputDecoration(labelText: 'Localização'),
+              decoration: InputDecoration(
+                labelText: 'Localização',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: theme.colorScheme.surface.withOpacity(0.05),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: _profession,
               items: _professions.map((prof) {
                 return DropdownMenuItem(value: prof, child: Text(prof));
               }).toList(),
               onChanged: (value) => setState(() => _profession = value),
-              decoration: const InputDecoration(labelText: 'Profissão'),
+              decoration: InputDecoration(
+                labelText: 'Profissão',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: theme.colorScheme.surface.withOpacity(0.05),
+              ),
             ),
             const Spacer(),
-            ElevatedButton(
-              onPressed: _applyFilters,
-              child: const Text('Aplicar Filtros'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _applyFilters,
+                icon: const Icon(Icons.check),
+                label: const Text('Aplicar Filtros'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
+              ),
             ),
           ],
         ),

@@ -1,3 +1,6 @@
+
+import 'review_model.dart';
+
 class Worker {
   final String id;
   final String name;
@@ -8,6 +11,7 @@ class Worker {
   final List<String> services;
   final String location;
   final bool isFavorite;
+  final List<Review> reviews;
 
   Worker({
     required this.id,
@@ -19,5 +23,6 @@ class Worker {
     required this.services,
     required this.location,
     this.isFavorite = false,
+    this.reviews = const [],
   });
 }
