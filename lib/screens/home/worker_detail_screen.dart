@@ -1,14 +1,25 @@
 import 'package:appservico/screens/profile/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/worker_model.dart';
 import '../../models/review_model.dart';
 import '../../services/worker_service.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class WorkerDetailScreen extends StatelessWidget {
   final Worker worker;
 
   const WorkerDetailScreen({super.key, required this.worker});
+
+  void abrirWhatsApp(String numero) async {
+    final url = 'https://wa.me/$numero?text=Olá,%20vim%20pelo%20app%20ServiçoJá!';
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Não foi possível abrir o WhatsApp.';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,12 +82,56 @@ class WorkerDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+
+            // 👇 Seção de Portfólio
+            if (worker.portfolioImages.isNotEmpty)
+              _buildSectionCard(
+                context,
+                title: 'Portfólio',
+                child: SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: worker.portfolioImages.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            worker.portfolioImages[index],
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.broken_image),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 16),
             Row(
               children: [
                 const Icon(Icons.location_on),
                 const SizedBox(width: 4),
                 Text(worker.location, style: theme.textTheme.bodyMedium),
               ],
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: () => abrirWhatsApp(worker.whatsappNumber),
+                icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white),
+                label: const Text('Conversar no WhatsApp'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+              ),
             ),
             const SizedBox(height: 30),
             const Divider(),

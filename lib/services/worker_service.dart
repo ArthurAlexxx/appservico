@@ -13,7 +13,12 @@ class WorkerService with ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=500',
       services: ['Encanamento', 'Conserto de vazamentos', 'Instalação hidráulica'],
       location: 'São Paulo - SP',
+      whatsappNumber: '5511987654321',
       reviews: [],
+      portfolioImages: [
+        'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=500',
+        'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=500',
+      ],
     ),
     Worker(
       id: '2',
@@ -24,7 +29,12 @@ class WorkerService with ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500',
       services: ['Instalação elétrica', 'Manutenção', 'Troca de disjuntores'],
       location: 'Rio de Janeiro - RJ',
+      whatsappNumber: '5521998765432',
       reviews: [],
+      portfolioImages: [
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500',
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500',
+      ],
     ),
     Worker(
       id: '3',
@@ -35,7 +45,12 @@ class WorkerService with ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500',
       services: ['Pintura interna', 'Pintura externa', 'Texturização'],
       location: 'Belo Horizonte - MG',
+      whatsappNumber: '5531991234567',
       reviews: [],
+      portfolioImages: [
+        'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500',
+        'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500',
+      ],
     ),
   ];
 
@@ -58,8 +73,10 @@ class WorkerService with ChangeNotifier {
           imageUrl: worker.imageUrl,
           services: worker.services,
           location: worker.location,
+          whatsappNumber: worker.whatsappNumber,
           isFavorite: !worker.isFavorite,
           reviews: worker.reviews,
+          portfolioImages: worker.portfolioImages,
         );
       }
       return worker;
@@ -92,8 +109,10 @@ class WorkerService with ChangeNotifier {
         imageUrl: worker.imageUrl,
         services: worker.services,
         location: worker.location,
+        whatsappNumber: worker.whatsappNumber,
         isFavorite: worker.isFavorite,
         reviews: updatedReviews,
+        portfolioImages: worker.portfolioImages,
       );
       notifyListeners();
     }

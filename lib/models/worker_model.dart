@@ -1,4 +1,3 @@
-
 import 'review_model.dart';
 
 class Worker {
@@ -12,6 +11,8 @@ class Worker {
   final String location;
   final bool isFavorite;
   final List<Review> reviews;
+  final String whatsappNumber;
+  final List<String> portfolioImages;
 
   Worker({
     required this.id,
@@ -22,7 +23,9 @@ class Worker {
     required this.imageUrl,
     required this.services,
     required this.location,
+    required this.whatsappNumber,
     this.isFavorite = false,
     this.reviews = const [],
+    this.portfolioImages = const [],
   });
 }
