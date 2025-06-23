@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "886100364182",
+    "project_id": "servicojaapp-fc85b",
+    "storage_bucket": "servicojaapp-fc85b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:886100364182:android:c0c9e2df0c5ae36feeebb7",
+        "android_client_info": {
+          "package_name": "com.example.appservico"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAb8Ql4yHqOKO0k_PmK46T4lMG6n2MR18w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

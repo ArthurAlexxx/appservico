@@ -11,7 +11,7 @@ class Review {
     required this.date,
   });
 
-  // Para salvar em banco de dados (ex: Firebase)
+  // Para salvar no Firestore
   Map<String, dynamic> toMap() {
     return {
       'author': author,
@@ -21,7 +21,7 @@ class Review {
     };
   }
 
-  // Para recuperar do banco de dados
+  // Para recuperar do Firestore
   factory Review.fromMap(Map<String, dynamic> map) {
     return Review(
       author: map['author'] ?? '',

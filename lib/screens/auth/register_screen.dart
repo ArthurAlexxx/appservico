@@ -18,7 +18,7 @@ class RegisterScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -67,6 +67,9 @@ class RegisterScreen extends StatelessWidget {
                               if (value == null || value.isEmpty) {
                                 return 'Por favor, insira seu email';
                               }
+                              if (!value.contains('@')) {
+                                return 'Insira um email válido';
+                              }
                               return null;
                             },
                           ),
@@ -80,7 +83,7 @@ class RegisterScreen extends StatelessWidget {
                                 return 'Por favor, insira sua senha';
                               }
                               if (value.length < 6) {
-                                return 'Senha deve ter pelo menos 6 caracteres';
+                                return 'A senha deve ter no mínimo 6 caracteres';
                               }
                               return null;
                             },
@@ -103,13 +106,25 @@ class RegisterScreen extends StatelessWidget {
                             onPressed: () async {
                               if (formKey.currentState!.validate()) {
                                 final authService = Provider.of<AuthService>(context, listen: false);
-                                await authService.registerWithEmailAndPassword(
-                                  nameController.text,
-                                  emailController.text,
-                                  passwordController.text,
-                                  phoneController.text,
-                                );
-                                Navigator.pushReplacementNamed(context, '/home');
+                                try {
+                                  await authService.registerWithEmailAndPassword(
+                                    emailController.text.trim(),
+                                    passwordController.text.trim(),
+                                    nameController.text.trim(),
+                                    phoneController.text.trim(),
+                                  );
+                                  Navigator.pushReplacementNamed(context, '/home');
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        e.toString().contains('weak-password')
+                                            ? 'A senha é muito fraca. Use pelo menos 6 caracteres.'
+                                            : e.toString(),
+                                      ),
+                                    ),
+                                  );
+                                }
                               }
                             },
                           ),

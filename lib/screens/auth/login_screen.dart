@@ -10,14 +10,14 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final emailController = TextEditingController(text: 'teste@email.com');
-    final passwordController = TextEditingController(text: 'senha123');
+    final emailController = TextEditingController(text: '');
+    final passwordController = TextEditingController(text: '');
     final formKey = GlobalKey<FormState>();
 
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -78,11 +78,19 @@ class LoginScreen extends StatelessWidget {
                             onPressed: () async {
                               if (formKey.currentState!.validate()) {
                                 final authService = Provider.of<AuthService>(context, listen: false);
-                                await authService.signInWithEmailAndPassword(
-                                  emailController.text,
-                                  passwordController.text,
-                                );
-                                Navigator.pushReplacementNamed(context, '/home');
+                                try {
+                                  await authService.signInWithEmailAndPassword(
+                                    emailController.text,
+                                    passwordController.text,
+                                  );
+                                  Navigator.pushReplacementNamed(context, '/home');
+                                } catch (e, stackTrace) {
+                                  print('Erro ao fazer login: $e');
+                                  print('Stack trace: $stackTrace');
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Erro ao entrar: $e')),
+                                  );
+                                }
                               }
                             },
                           ),

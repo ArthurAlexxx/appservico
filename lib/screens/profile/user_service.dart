@@ -1,14 +1,80 @@
+import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class UserService with ChangeNotifier {
-  String name = 'Usuário Teste';
-  String email = 'teste@email.com';
-  String phone = '(11) 99999-9999';
+  String name = '';
+  String email = '';
+  String phone = '';
+  String photoUrl = '';
 
-  void updateProfile({required String newName, required String newEmail, required String newPhone}) {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  Future<void> loadUserData() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      final doc = await _firestore.collection('users').doc(currentUser.uid).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        name = data['name'] ?? '';
+        email = data['email'] ?? currentUser.email ?? '';
+        phone = data['phone'] ?? '';
+        photoUrl = data['photoUrl'] ?? '';
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> uploadProfilePhoto() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final uid = _auth.currentUser!.uid;
+      final ref = _storage.ref().child('profile_photos/$uid.jpg');
+
+      UploadTask uploadTask;
+
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        uploadTask = ref.putData(bytes);
+      } else {
+        final file = io.File(pickedFile.path);
+        uploadTask = ref.putFile(file);
+      }
+
+      final snapshot = await uploadTask;
+      final url = await snapshot.ref.getDownloadURL();
+
+      await _firestore.collection('users').doc(uid).update({'photoUrl': url});
+      photoUrl = url;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateProfile({
+    required String newName,
+    required String newEmail,
+    required String newPhone,
+  }) async {
+    final uid = _auth.currentUser!.uid;
+
     name = newName;
     email = newEmail;
     phone = newPhone;
+
+    await _firestore.collection('users').doc(uid).update({
+      'name': newName,
+      'email': newEmail,
+      'phone': newPhone,
+    });
+
     notifyListeners();
   }
 }
