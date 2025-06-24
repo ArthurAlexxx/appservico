@@ -11,23 +11,30 @@ class AuthService with ChangeNotifier {
   UserModel? get user => _user;
 
   // 🔐 Login
-  Future<void> signInWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential> signInWithEmailAndPassword(String email, String password) async {
     try {
       final result = await _auth.signInWithEmailAndPassword(email: email, password: password);
       final doc = await _firestore.collection('users').doc(result.user!.uid).get();
 
-      if (!doc.exists) throw Exception('Usuário não encontrado no banco.');
+      if (!doc.exists) {
+        throw FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'Usuário não encontrado no banco.',
+        );
+      }
 
       final data = doc.data()!..addAll({'id': result.user!.uid});
       _user = UserModel.fromMap(data);
       notifyListeners();
+
+      return result;
     } on FirebaseAuthException catch (e) {
-      throw _handleAuthError(e);
+      throw e;
     }
   }
 
   // 📝 Registro
-  Future<void> registerWithEmailAndPassword(
+  Future<UserCredential> registerWithEmailAndPassword(
     String email,
     String password,
     String name,
@@ -50,29 +57,41 @@ class AuthService with ChangeNotifier {
 
       _user = newUser;
       notifyListeners();
+
+      return result;
     } on FirebaseAuthException catch (e) {
-      throw _handleAuthError(e);
+      throw e;
     }
   }
 
+  // 🚪 Logout
   Future<void> signOut() async {
     await _auth.signOut();
     _user = null;
     notifyListeners();
   }
 
-  String _handleAuthError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return 'Usuário não encontrado.';
-      case 'wrong-password':
-        return 'Senha incorreta.';
-      case 'email-already-in-use':
-        return 'Email já cadastrado.';
-      case 'weak-password':
-        return 'Senha muito fraca.';
-      default:
-        return 'Erro: ${e.message}';
+  Future<void> loadCurrentUser() async {
+    final user = await _auth.authStateChanges().first;
+    if (user != null) {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data()!..addAll({'id': user.uid});
+        _user = UserModel.fromMap(data);
+        notifyListeners();
+      }
+    } else {
+      _user = null;
+      notifyListeners();
+    }
+  }
+
+  // 🔑 Reset de senha via email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw e;
     }
   }
 }

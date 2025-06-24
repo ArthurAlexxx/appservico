@@ -2,6 +2,7 @@ import 'package:appservico/screens/home/worker_list.dart';
 import 'package:appservico/screens/profile/edit_profile_screen.dart';
 import 'package:appservico/screens/profile/register_worker_screen.dart';
 import 'package:appservico/screens/profile/user_service.dart';
+import 'package:appservico/screens/splash_screen.dart';
 import 'package:appservico/services/auth_service.dart';
 import 'package:appservico/services/subscription/subscription_screen.dart';
 import 'package:flutter/material.dart';
@@ -39,12 +40,11 @@ class MyApp extends StatelessWidget {
         title: 'ServiçoJá',
         debugShowCheckedModeBanner: false,
         theme: appTheme,
-        home: LoginScreen(),
+        home: const SplashScreen(),
         routes: {
           '/login': (context) => LoginScreen(),
           '/register': (context) => RegisterScreen(),
           '/home': (context) => HomeScreen(),
-          // Troquei a rota '/search' para abrir a WorkerListScreen, que já tem filtro integrado
           '/search': (context) => const WorkerListScreen(),
           '/edit-profile': (context) => const EditProfileScreen(),
           '/register-worker': (context) => const RegisterWorkerScreen(),

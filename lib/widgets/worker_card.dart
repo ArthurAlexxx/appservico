@@ -7,23 +7,26 @@ import '../../services/worker_service.dart';
 class WorkerCard extends StatelessWidget {
   final Worker worker;
   final VoidCallback? onTap;
+  final bool showVerificationBadge;
 
   const WorkerCard({
     super.key,
     required this.worker,
     this.onTap,
+    this.showVerificationBadge = true, // default true, pode ajustar se quiser
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final userService = Provider.of<UserService>(context, listen: false);
+    final currentUserId = userService.currentUserId;
 
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        elevation: 3,
+        elevation: worker.isFeatured ? 4 : 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        // REMOVI a margem vertical para evitar espaçamento duplicado
         margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -32,9 +35,37 @@ class WorkerCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundImage: NetworkImage(worker.imageUrl),
-                    radius: 30,
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        backgroundImage: NetworkImage(worker.imageUrl),
+                        radius: 30,
+                      ),
+                      if (worker.isFeatured)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(0.5),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.star,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -52,7 +83,8 @@ class WorkerCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (worker.isVerified)
+                            // Só mostra o selo de verificado se for verdade e o worker.isVerified for true
+                            if (showVerificationBadge && worker.isVerified)
                               const Padding(
                                 padding: EdgeInsets.only(left: 6),
                                 child: Icon(Icons.verified, color: Colors.blue, size: 18),
@@ -112,19 +144,26 @@ class WorkerCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () {
-                    Provider.of<WorkerService>(context, listen: false).removeWorker(worker.id);
-                  },
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  label: const Text(
-                    'Remover',
-                    style: TextStyle(color: Colors.red),
+              if (worker.userId == currentUserId) // Só exibe se for dono do anúncio
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      try {
+                        await Provider.of<WorkerService>(context, listen: false).removeWorker(worker.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Profissional removido com sucesso.')),
+                        );
+                      } catch (_) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Erro ao remover profissional.')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    label: const Text('Remover', style: TextStyle(color: Colors.red)),
                   ),
                 ),
-              ),
             ],
           ),
         ),

@@ -35,6 +35,13 @@ class _WorkerFilterScreenState extends State<WorkerFilterScreen> {
 
         return matchesProfession && matchesRating && matchesLocation;
       }).toList();
+
+      // Ordena colocando os destacados no topo
+      filteredWorkers.sort((a, b) {
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        return 0;
+      });
     });
   }
 
@@ -44,6 +51,8 @@ class _WorkerFilterScreenState extends State<WorkerFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Filtrar Trabalhadores'),
@@ -107,28 +116,33 @@ class _WorkerFilterScreenState extends State<WorkerFilterScreen> {
               },
             ),
             const SizedBox(height: 24),
-            Expanded(
-              child: filteredWorkers.isEmpty
-                  ? const Center(child: Text('Nenhum trabalhador encontrado'))
-                  : ListView.builder(
-                      itemCount: filteredWorkers.length,
-                      itemBuilder: (context, index) {
-                        final worker = filteredWorkers[index];
-                        return ListTile(
-                          title: Text(worker.name),
-                          subtitle: Text('${worker.profession} • Nota: ${worker.rating.toStringAsFixed(1)}'),
-                          trailing: Text(worker.location),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => WorkerDetailScreen(worker: worker),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+          Expanded(
+            child: filteredWorkers.isEmpty
+                ? const Center(child: Text('Nenhum trabalhador encontrado'))
+                : ListView.builder(
+                    itemCount: filteredWorkers.length,
+                    itemBuilder: (context, index) {
+                      final worker = filteredWorkers[index];
+                      return ListTile(
+                        leading: worker.isFeatured
+                            ? const Icon(Icons.star, color: Colors.blue)
+                            : null,
+                        title: Text(worker.name),
+                        subtitle: Text(
+                          '${worker.profession} • Nota: ${worker.rating.toStringAsFixed(1)}',
+                        ),
+                        trailing: Text(worker.location),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkerDetailScreen(worker: worker),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
             ),
           ],
         ),

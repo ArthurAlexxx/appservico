@@ -1,14 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/subscription_service.dart';
 
-class SubscriptionScreen extends StatelessWidget {
+class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
 
   @override
+  State<SubscriptionScreen> createState() => _SubscriptionScreenState();
+}
+
+class _SubscriptionScreenState extends State<SubscriptionScreen> {
+  bool _isLoading = false;
+
+  Future<void> _selectPlan(
+      BuildContext context, String userId, String plan) async {
+    setState(() => _isLoading = true);
+
+    try {
+      final subscription = Provider.of<SubscriptionService>(context, listen: false);
+      await subscription.updatePlan(userId, plan);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Plano "$plan" selecionado com sucesso!')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao selecionar plano: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final subscription = Provider.of<SubscriptionService>(context);
     final theme = Theme.of(context);
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? '';
+    final subscription = Provider.of<SubscriptionService>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -18,56 +54,55 @@ class SubscriptionScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildPlanCard(
-              context,
-              title: 'Grátis',
-              price: 'R\$ 0,00/mês',
-              features: [
-                'Acesso limitado a profissionais',
-                'Visualização de avaliações',
-              ],
-              selected: subscription.currentPlan == 'free',
-              onTap: () {
-                subscription.updatePlan('free');
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildPlanCard(
-              context,
-              title: 'Profissional',
-              price: 'R\$ 19,90/mês',
-              features: [
-                'Acesso completo a profissionais',
-                'Contato direto via WhatsApp',
-                'Suporte prioritário',
-              ],
-              selected: subscription.currentPlan == 'pro',
-              onTap: () {
-                subscription.updatePlan('pro');
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildPlanCard(
-              context,
-              title: 'Premium',
-              price: 'R\$ 39,90/mês',
-              features: [
-                'Todos os benefícios do plano Profissional',
-                'Destaque nos resultados',
-                'Selo de verificado automático',
-              ],
-              selected: subscription.currentPlan == 'premium',
-              onTap: () {
-                subscription.updatePlan('premium');
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  _buildPlanCard(
+                    context,
+                    title: 'Grátis',
+                    price: 'R\$ 0,00/mês',
+                    features: [
+                      'Acesso básico a profissionais',
+                      'Visualização de avaliações',
+                      'Limite de até 5 fotos no portfólio',
+                      'Sem selo de verificação',
+                      'Sem destaque nos resultados',
+                    ],
+                    selected: subscription.currentPlan == 'free',
+                    onTap: () => _selectPlan(context, userId, 'free'),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPlanCard(
+                    context,
+                    title: 'Profissional',
+                    price: 'R\$ 19,90/mês',
+                    features: [
+                      'Acesso completo a profissionais',
+                      'Visualização de avaliações',
+                      'Limite de até 15 fotos no portfólio',
+                      'Selo de verificação',
+                      'Destaque nos resultados',
+                    ],
+                    selected: subscription.currentPlan == 'pro',
+                    onTap: () => _selectPlan(context, userId, 'pro'),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPlanCard(
+                    context,
+                    title: 'Premium',
+                    price: 'R\$ 39,90/mês',
+                    features: [
+                      'Todos os benefícios do plano Profissional',
+                      'Fotos ilimitadas no portfólio',
+                      'Selo de verificação',
+                      'Destaque garantido nos resultados',
+                    ],
+                    selected: subscription.currentPlan == 'premium',
+                    onTap: () => _selectPlan(context, userId, 'premium'),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -111,6 +146,7 @@ class SubscriptionScreen extends StatelessWidget {
             Text(price, style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
             ...features.map((f) => Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.check, size: 18, color: Colors.green),
                     const SizedBox(width: 6),
@@ -120,7 +156,11 @@ class SubscriptionScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Center(
               child: ElevatedButton(
-                onPressed: onTap,
+                onPressed: selected ? null : onTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Selecionar plano'),
               ),
             ),

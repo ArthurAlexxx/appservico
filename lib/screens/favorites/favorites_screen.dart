@@ -23,7 +23,16 @@ class FavoritesScreen extends StatelessWidget {
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Erro ao carregar favoritos: ${snapshot.error}'));
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Erro ao carregar favoritos: ${snapshot.error}',
+                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
         }
 
         final favoriteWorkers = snapshot.data ?? [];
@@ -31,7 +40,7 @@ class FavoritesScreen extends StatelessWidget {
         if (favoriteWorkers.isEmpty) {
           return Center(
             child: Padding(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.all(32),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -51,6 +60,7 @@ class FavoritesScreen extends StatelessWidget {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: favoriteWorkers.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final worker = favoriteWorkers[index];
             return WorkerCard(
@@ -63,9 +73,9 @@ class FavoritesScreen extends StatelessWidget {
                   ),
                 );
               },
+              showVerificationBadge: worker.isVerified,
             );
           },
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
         );
       },
     );

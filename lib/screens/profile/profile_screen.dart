@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'user_service.dart';
+import '../../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,9 +38,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              Navigator.pushReplacementNamed(context, '/login');
+
+              // ✅ Logout seguro com AuthService
+              final authService = Provider.of<AuthService>(context, listen: false);
+              await authService.signOut();
+
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/login');
+              }
             },
             child: const Text('Sair'),
           ),
@@ -62,6 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Meu Perfil'),
         actions: [
           IconButton(

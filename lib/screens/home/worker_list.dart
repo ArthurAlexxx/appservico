@@ -26,18 +26,22 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
 
   Future<void> _loadWorkers() async {
     setState(() => _isLoading = true);
-    await Provider.of<WorkerService>(context, listen: false).fetchWorkers();
-    await Provider.of<UserService>(context, listen: false).loadUserData();
-    setState(() => _isLoading = false);
+    try {
+      await Provider.of<WorkerService>(context, listen: false).fetchWorkers();
+      await Provider.of<UserService>(context, listen: false).loadUserData();
+    } catch (e) {
+      debugPrint('Erro ao carregar dados: $e');
+      // Opcional: mostrar snackbar ou mensagem de erro para o usuário
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _openFilter() async {
     final workers = Provider.of<WorkerService>(context, listen: false).workers;
     final filtered = await Navigator.push<List<Worker>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => WorkerFilterScreen(workers: workers),
-      ),
+      MaterialPageRoute(builder: (_) => WorkerFilterScreen(workers: workers)),
     );
 
     if (filtered != null) {
@@ -51,6 +55,9 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final workerService = Provider.of<WorkerService>(context);
+    final userService = Provider.of<UserService>(context);
+
+    // Ordena destacando primeiro os trabalhadores com isFeatured = true
     final sortedWorkers = [...workerService.workers]
       ..sort((a, b) => b.isFeatured.toString().compareTo(a.isFeatured.toString()));
 
@@ -71,12 +78,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             icon: const Icon(Icons.filter_list),
             onPressed: _openFilter,
           ),
-          // Espaço para search se quiser depois
-          // IconButton(
-          //   tooltip: 'Buscar',
-          //   icon: const Icon(Icons.search),
-          //   onPressed: () {},
-          // ),
         ],
         backgroundColor: theme.colorScheme.primary,
       ),
@@ -106,33 +107,42 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                             const Text(
                               'Nenhum trabalhador encontrado',
                               style: TextStyle(fontSize: 18, color: Colors.grey),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       )
-                    : ListView.builder(
+                    : ListView.separated(
                         itemCount: listToShow.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final worker = listToShow[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Material(
-                              color: worker.isFeatured
-                                  ? theme.colorScheme.primary.withOpacity(0.1)
-                                  : Colors.white,
+
+                          // Exibir destaque e selo se o usuário for 'worker' e plano 'pro' ou 'premium'
+                          final showHighlight = userService.profileType == 'worker' &&
+                              (userService.profileType == 'pro' || userService.profileType == 'premium') &&
+                              worker.isFeatured;
+
+                          return Material(
+                            color: showHighlight
+                                ? theme.colorScheme.primary.withOpacity(0.15)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            elevation: showHighlight ? 6 : 2,
+                            child: InkWell(
                               borderRadius: BorderRadius.circular(12),
-                              elevation: 2,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => WorkerDetailScreen(worker: worker),
-                                    ),
-                                  );
-                                },
-                                child: WorkerCard(worker: worker),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => WorkerDetailScreen(worker: worker),
+                                  ),
+                                );
+                              },
+                              child: WorkerCard(
+                                worker: worker,
+                                onTap: null, // Removido onTap para evitar ação dupla
+                                showVerificationBadge: showHighlight,
                               ),
                             ),
                           );
