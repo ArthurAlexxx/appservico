@@ -11,10 +11,13 @@ class UserService with ChangeNotifier {
   String email = '';
   String phone = '';
   String photoUrl = '';
+  List<String> favoriteWorkerIds = [];
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  String get currentUserId => _auth.currentUser?.uid ?? '';
 
   Future<void> loadUserData() async {
     final currentUser = _auth.currentUser;
@@ -26,9 +29,30 @@ class UserService with ChangeNotifier {
         email = data['email'] ?? currentUser.email ?? '';
         phone = data['phone'] ?? '';
         photoUrl = data['photoUrl'] ?? '';
+        favoriteWorkerIds = List<String>.from(data['favoriteWorkerIds'] ?? []);
         notifyListeners();
       }
     }
+  }
+
+  Future<void> updateProfile({
+    required String newName,
+    required String newEmail,
+    required String newPhone,
+  }) async {
+    final uid = _auth.currentUser!.uid;
+
+    name = newName;
+    email = newEmail;
+    phone = newPhone;
+
+    await _firestore.collection('users').doc(uid).update({
+      'name': newName,
+      'email': newEmail,
+      'phone': newPhone,
+    });
+
+    notifyListeners();
   }
 
   Future<void> uploadProfilePhoto() async {
@@ -58,23 +82,52 @@ class UserService with ChangeNotifier {
     }
   }
 
-  Future<void> updateProfile({
-    required String newName,
-    required String newEmail,
-    required String newPhone,
-  }) async {
+  Future<void> uploadProfilePhotoFromFile(io.File file) async {
     final uid = _auth.currentUser!.uid;
+    final ref = _storage.ref().child('profile_photos/$uid.jpg');
 
-    name = newName;
-    email = newEmail;
-    phone = newPhone;
+    UploadTask uploadTask = ref.putFile(file);
+    final snapshot = await uploadTask;
+    final url = await snapshot.ref.getDownloadURL();
 
-    await _firestore.collection('users').doc(uid).update({
-      'name': newName,
-      'email': newEmail,
-      'phone': newPhone,
+    await _firestore.collection('users').doc(uid).update({'photoUrl': url});
+    photoUrl = url;
+    notifyListeners();
+  }
+
+  Future<void> addFavoriteWorker(String workerId) async {
+    final uid = _auth.currentUser!.uid;
+    final userRef = _firestore.collection('users').doc(uid);
+
+    await userRef.update({
+      'favoriteWorkerIds': FieldValue.arrayUnion([workerId]),
     });
 
+    favoriteWorkerIds.add(workerId);
     notifyListeners();
+  }
+
+  Future<void> removeFavoriteWorker(String workerId) async {
+    final uid = _auth.currentUser!.uid;
+    final userRef = _firestore.collection('users').doc(uid);
+
+    await userRef.update({
+      'favoriteWorkerIds': FieldValue.arrayRemove([workerId]),
+    });
+
+    favoriteWorkerIds.remove(workerId);
+    notifyListeners();
+  }
+
+  Future<List<String>> getFavoriteWorkerIds() async {
+    final uid = _auth.currentUser!.uid;
+    final doc = await _firestore.collection('users').doc(uid).get();
+
+    if (doc.exists) {
+      final data = doc.data()!;
+      return List<String>.from(data['favoriteWorkerIds'] ?? []);
+    }
+
+    return [];
   }
 }

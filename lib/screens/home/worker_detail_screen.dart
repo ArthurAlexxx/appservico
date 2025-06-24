@@ -17,39 +17,46 @@ class WorkerDetailScreen extends StatelessWidget {
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
-      throw 'Não foi possível abrir o WhatsApp.';
+      ScaffoldMessenger.of(_scaffoldContext!).showSnackBar(
+        const SnackBar(content: Text('Não foi possível abrir o WhatsApp.')),
+      );
     }
   }
+
+  static BuildContext? _scaffoldContext;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    _scaffoldContext = context;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(worker.name),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
+        elevation: 4,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: CircleAvatar(
-                radius: 60,
+                radius: 70,
                 backgroundImage: NetworkImage(worker.imageUrl),
+                onBackgroundImageError: (_, __) => const Icon(Icons.person, size: 70),
               ),
             ),
             const SizedBox(height: 20),
             Center(
               child: Text(
                 worker.profession,
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -60,51 +67,67 @@ class WorkerDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
+
+            // Descrição
             _buildSectionCard(
               context,
               title: 'Descrição',
-              child: Text(worker.description, style: theme.textTheme.bodyMedium),
+              child: Text(
+                worker.description.isNotEmpty ? worker.description : 'Sem descrição.',
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
+            // Serviços
             _buildSectionCard(
               context,
               title: 'Serviços oferecidos',
-              child: Column(
-                children: worker.services
-                    .map((s) => ListTile(
-                          leading: const Icon(Icons.check_circle_outline),
-                          title: Text(s),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ))
-                    .toList(),
-              ),
+              child: worker.services.isNotEmpty
+                  ? Column(
+                      children: worker.services
+                          .map(
+                            (service) => ListTile(
+                              leading: const Icon(Icons.check_circle_outline, color: Colors.green),
+                              title: Text(service),
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          )
+                          .toList(),
+                    )
+                  : Text('Nenhum serviço listado.', style: theme.textTheme.bodyMedium),
             ),
-            const SizedBox(height: 16),
 
-            // 👇 Seção de Portfólio
+            const SizedBox(height: 20),
+
+            // Portfólio
             if (worker.portfolioImages.isNotEmpty)
               _buildSectionCard(
                 context,
                 title: 'Portfólio',
                 child: SizedBox(
-                  height: 120,
-                  child: ListView.builder(
+                  height: 140,
+                  child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: worker.portfolioImages.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            worker.portfolioImages[index],
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.broken_image),
+                      final imgUrl = worker.portfolioImages[index];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          imgUrl,
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey[300],
+                            width: 140,
+                            height: 140,
+                            child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
                           ),
                         ),
                       );
@@ -113,47 +136,85 @@ class WorkerDetailScreen extends StatelessWidget {
                 ),
               ),
 
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.location_on),
-                const SizedBox(width: 4),
-                Text(worker.location, style: theme.textTheme.bodyMedium),
-              ],
-            ),
             const SizedBox(height: 20),
+
+            // Localização
+            _buildSectionCard(
+              context,
+              title: 'Localização',
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.redAccent),
+                  const SizedBox(width: 8),
+                  Flexible(child: Text(worker.location, style: theme.textTheme.bodyMedium)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Botão WhatsApp
             Center(
               child: ElevatedButton.icon(
                 onPressed: () => abrirWhatsApp(worker.whatsappNumber),
                 icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white),
                 label: const Text('Conversar no WhatsApp'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  backgroundColor: Colors.green[600],
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+
+            const SizedBox(height: 36),
+
             const Divider(),
-            Text('Avaliações', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ...worker.reviews.map((review) => Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    title: Text(review.author),
-                    subtitle: Text(review.comment),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(
-                        review.rating,
-                        (index) => const Icon(Icons.star, color: Colors.amber, size: 16),
+
+            Text('Avaliações', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+
+            Consumer<WorkerService>(
+              builder: (context, workerService, _) {
+                final reviews = workerService.getReviews(worker.id);
+
+                if (reviews.isEmpty) {
+                  return const Text('Nenhuma avaliação ainda.', style: TextStyle(color: Colors.grey));
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: reviews.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final review = reviews[index];
+                    return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        title: Text(review.author, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(review.comment),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(
+                            review.rating,
+                            (index) => const Icon(Icons.star, color: Colors.amber, size: 16),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                )),
-            const SizedBox(height: 20),
-            Text('Deixe sua avaliação', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
+                    );
+                  },
+                );
+              },
+            ),
+
+            const SizedBox(height: 30),
+
+            Text('Deixe sua avaliação', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+
             _ReviewForm(workerId: worker.id),
           ],
         ),
@@ -164,18 +225,16 @@ class WorkerDetailScreen extends StatelessWidget {
   Widget _buildSectionCard(BuildContext context, {required String title, required Widget child}) {
     final theme = Theme.of(context);
     return Card(
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            child,
-          ],
-        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          child,
+        ]),
       ),
     );
   }
@@ -194,6 +253,13 @@ class _ReviewFormState extends State<_ReviewForm> {
   final _formKey = GlobalKey<FormState>();
   final _commentController = TextEditingController();
   int _rating = 5;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,44 +268,81 @@ class _ReviewFormState extends State<_ReviewForm> {
     return Form(
       key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DropdownButtonFormField<int>(
             value: _rating,
-            decoration: const InputDecoration(labelText: 'Nota'),
-            items: List.generate(5, (index) => index + 1)
-                .map((value) => DropdownMenuItem(value: value, child: Text('$value estrela${value > 1 ? 's' : ''}')))
+            decoration: const InputDecoration(
+              labelText: 'Nota',
+              border: OutlineInputBorder(),
+            ),
+            items: List.generate(5, (i) => i + 1)
+                .map(
+                  (val) => DropdownMenuItem(
+                    value: val,
+                    child: Text('$val estrela${val > 1 ? 's' : ''}'),
+                  ),
+                )
                 .toList(),
-            onChanged: (value) {
-              setState(() {
-                _rating = value ?? 5;
-              });
-            },
+            onChanged: (val) => setState(() => _rating = val ?? 5),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextFormField(
             controller: _commentController,
-            decoration: const InputDecoration(labelText: 'Comentário'),
-            maxLines: 2,
-            validator: (value) => value == null || value.isEmpty ? 'Digite um comentário' : null,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Comentário',
+              border: OutlineInputBorder(),
+            ),
+            validator: (val) => (val == null || val.isEmpty) ? 'Digite um comentário' : null,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                final review = Review(
-                  author: user.name,
-                  comment: _commentController.text,
-                  rating: _rating,
-                  date: DateTime.now(),
-                );
-                Provider.of<WorkerService>(context, listen: false).addReview(widget.workerId, review);
-                _commentController.clear();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Avaliação enviada com sucesso!')),
-                );
-              }
-            },
-            child: const Text('Enviar Avaliação'),
+            onPressed: _sending
+                ? null
+                : () async {
+                    if (_formKey.currentState!.validate()) {
+                      setState(() => _sending = true);
+                      try {
+                        if (widget.workerId.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Erro: ID do trabalhador inválido.')),
+                          );
+                          return;
+                        }
+
+                        final review = Review(
+                          author: user.name,
+                          workerId: widget.workerId,
+                          comment: _commentController.text.trim(),
+                          rating: _rating,
+                          date: DateTime.now(),
+                        );
+
+                        await Provider.of<WorkerService>(context, listen: false).addReview(widget.workerId, review);
+
+                        _commentController.clear();
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Avaliação enviada com sucesso!')),
+                        );
+                      } finally {
+                        setState(() => _sending = false);
+                      }
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: _sending
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text('Enviar Avaliação'),
           ),
         ],
       ),

@@ -5,6 +5,7 @@ import 'package:geocoding/geocoding.dart';
 
 import '../../models/worker_model.dart';
 import '../../services/worker_service.dart';
+import '../profile/user_service.dart';
 
 class RegisterWorkerScreen extends StatefulWidget {
   const RegisterWorkerScreen({super.key});
@@ -23,6 +24,14 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
   final _locationController = TextEditingController();
   final _whatsappController = TextEditingController();
   final List<TextEditingController> _portfolioControllers = [TextEditingController()];
+
+  @override
+  void initState() {
+    super.initState();
+    final userService = Provider.of<UserService>(context, listen: false);
+    _nameController.text = userService.name; // preenche nome do perfil
+    _whatsappController.text = userService.phone; // preenche telefone do perfil
+  }
 
   Future<void> _getCurrentLocation() async {
     try {
@@ -80,36 +89,40 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
   }
 
   void _submitForm() {
-  if (_formKey.currentState!.validate()) {
-    final portfolioImages = _portfolioControllers
-        .map((c) => c.text.trim())
-        .where((url) => url.isNotEmpty)
-        .toList();
+    if (_formKey.currentState!.validate()) {
+      final userService = Provider.of<UserService>(context, listen: false);
+      final userId = userService.currentUserId;
 
-    // Aqui você pode obter o plano do usuário de onde estiver armazenado
-    // Exemplo com Provider (se você tiver um SubscriptionService):
-    // final subscriptionPlan = Provider.of<SubscriptionService>(context, listen: false).currentPlan;
+      if (userId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Usuário não autenticado.')),
+        );
+        return;
+      }
 
-    // Como você ainda não tem isso implementado, vamos simular:
-    const subscriptionPlan = 'premium'; // <- Substitua isso com o valor real depois
+      final portfolioImages = _portfolioControllers
+          .map((c) => c.text.trim())
+          .where((url) => url.isNotEmpty)
+          .toList();
 
-    final newWorker = Worker(
-      id: DateTime.now().toString(),
-      name: _nameController.text,
-      profession: _professionController.text,
-      description: _descriptionController.text,
-      imageUrl: _imageUrlController.text,
-      services: _servicesController.text.split(',').map((s) => s.trim()).toList(),
-      location: _locationController.text,
-      whatsappNumber: _whatsappController.text,
-      portfolioImages: portfolioImages,
-      isFeatured: subscriptionPlan == 'premium', // <- Aqui aplicamos o destaque
-    );
+      final newWorker = Worker(
+        id: DateTime.now().toString(),
+        userId: userId,
+        name: userService.name, // usa nome do perfil
+        profession: _professionController.text,
+        description: _descriptionController.text,
+        imageUrl: _imageUrlController.text,
+        services: _servicesController.text.split(',').map((s) => s.trim()).toList(),
+        location: _locationController.text,
+        whatsappNumber: userService.phone, // usa telefone do perfil
+        portfolioImages: portfolioImages,
+        isFeatured: false,
+      );
 
-    Provider.of<WorkerService>(context, listen: false).addWorker(newWorker);
-    Navigator.pop(context);
+      Provider.of<WorkerService>(context, listen: false).addWorker(newWorker);
+      Navigator.pop(context);
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +141,7 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
             key: _formKey,
             child: Column(
               children: [
-                _buildTextField(_nameController, 'Nome'),
+                _buildTextField(_nameController, 'Nome', enabled: false), 
                 _buildTextField(_professionController, 'Profissão'),
                 _buildTextField(_descriptionController, 'Descrição', maxLines: 3),
                 _buildTextField(_imageUrlController, 'URL da Imagem'),
@@ -148,17 +161,19 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
                 ),
                 _buildTextField(
                   _whatsappController,
-                  'Número do WhatsApp (ex: 5511999999999)',
+                  'Número do WhatsApp (ex: 11999999999)',
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor, preencha este campo';
                     }
-                    final regex = RegExp(r'^55\d{10,11}$');
+
+                    final regex = RegExp(r'^\d{10,11}$');
                     if (!regex.hasMatch(value)) {
-                      return 'Número inválido. Use o formato 55 + DDD + número (ex: 5511999999999)';
+                      return 'Número inválido. Use o DDD + número (ex: 11999999999)';
                     }
                     return null;
                   },
+                  enabled: false, 
                 ),
                 const SizedBox(height: 16),
                 const Text('Links do Portfólio', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -214,6 +229,7 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
     String label, {
     int maxLines = 1,
     String? Function(String?)? validator,
+    bool enabled = true,
   }) {
     final theme = Theme.of(context);
     return Padding(
@@ -221,19 +237,19 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        enabled: enabled,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
           fillColor: theme.colorScheme.surface.withOpacity(0.05),
         ),
-        validator: validator ??
-            (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor, preencha este campo';
-              }
-              return null;
-            },
+        validator: validator ?? (value) {
+          if (value == null || value.isEmpty) {
+            return 'Por favor, preencha este campo';
+          }
+          return null;
+        },
       ),
     );
   }

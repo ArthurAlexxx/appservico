@@ -10,45 +10,32 @@ class AuthService with ChangeNotifier {
   UserModel? _user;
   UserModel? get user => _user;
 
-  // Login
+  // 🔐 Login
   Future<void> signInWithEmailAndPassword(String email, String password) async {
-  try {
-    UserCredential result = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      final result = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final doc = await _firestore.collection('users').doc(result.user!.uid).get();
 
-    final doc = await _firestore.collection('users').doc(result.user!.uid).get();
+      if (!doc.exists) throw Exception('Usuário não encontrado no banco.');
 
-    if (!doc.exists || doc.data() == null) {
-      throw Exception('Usuário não encontrado no banco de dados.');
+      final data = doc.data()!..addAll({'id': result.user!.uid});
+      _user = UserModel.fromMap(data);
+      notifyListeners();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthError(e);
     }
-
-    final data = doc.data()!;
-    data['id'] = result.user!.uid;
-
-    _user = UserModel.fromMap(data);
-    notifyListeners();
-  } on FirebaseAuthException catch (e) {
-    throw _handleAuthError(e);
-  } catch (e) {
-    throw 'Erro inesperado ao fazer login: $e';
   }
-}
 
-  // Registro
+  // 📝 Registro
   Future<void> registerWithEmailAndPassword(
     String email,
     String password,
     String name,
     String phone,
+    String type,
   ) async {
     try {
-      UserCredential result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
+      final result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       final uid = result.user!.uid;
 
       final newUser = UserModel(
@@ -56,6 +43,7 @@ class AuthService with ChangeNotifier {
         name: name,
         email: email,
         phone: phone,
+        type: type,
       );
 
       await _firestore.collection('users').doc(uid).set(newUser.toMap());
@@ -67,14 +55,12 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  // Logout
   Future<void> signOut() async {
     await _auth.signOut();
     _user = null;
     notifyListeners();
   }
 
-  // Tratamento de erros
   String _handleAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
@@ -82,11 +68,9 @@ class AuthService with ChangeNotifier {
       case 'wrong-password':
         return 'Senha incorreta.';
       case 'email-already-in-use':
-        return 'Este email já está em uso.';
-      case 'invalid-email':
-        return 'Email inválido.';
+        return 'Email já cadastrado.';
       case 'weak-password':
-        return 'A senha é muito fraca.';
+        return 'Senha muito fraca.';
       default:
         return 'Erro: ${e.message}';
     }

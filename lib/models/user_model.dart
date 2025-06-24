@@ -5,6 +5,8 @@ class UserModel {
   final String phone;
   final String? photoUrl;
   final String subscriptionPlan;
+  final List<String> favoriteWorkerIds;
+  final String type; // novo campo para tipo de usuário
 
   UserModel({
     required this.id,
@@ -13,12 +15,13 @@ class UserModel {
     required this.phone,
     this.photoUrl,
     this.subscriptionPlan = 'free',
+    this.favoriteWorkerIds = const [],
+    required this.type,
   });
 
   bool get isPremium => subscriptionPlan == 'premium';
   bool get isPro => subscriptionPlan == 'pro';
 
-  // 🔹 Converte para Map (para salvar no Firestore)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -27,10 +30,11 @@ class UserModel {
       'phone': phone,
       'photoUrl': photoUrl,
       'subscriptionPlan': subscriptionPlan,
+      'favoriteWorkerIds': favoriteWorkerIds,
+      'type': type,
     };
   }
 
-  // 🔹 Cria a partir de Map (para ler do Firestore)
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
       id: map['id'] ?? '',
@@ -39,6 +43,8 @@ class UserModel {
       phone: map['phone'] ?? '',
       photoUrl: map['photoUrl'],
       subscriptionPlan: map['subscriptionPlan'] ?? 'free',
+      favoriteWorkerIds: List<String>.from(map['favoriteWorkerIds'] ?? []),
+      type: map['type'] ?? 'user',
     );
   }
 }

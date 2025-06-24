@@ -10,8 +10,8 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final emailController = TextEditingController(text: '');
-    final passwordController = TextEditingController(text: '');
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     final theme = Theme.of(context);
@@ -53,24 +53,16 @@ class LoginScreen extends StatelessWidget {
                           CustomTextField(
                             controller: emailController,
                             label: 'Email',
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Por favor, insira seu email';
-                              }
-                              return null;
-                            },
+                            validator: (value) =>
+                                value == null || value.isEmpty ? 'Insira seu email' : null,
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
                             controller: passwordController,
                             label: 'Senha',
                             obscureText: true,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Por favor, insira sua senha';
-                              }
-                              return null;
-                            },
+                            validator: (value) =>
+                                value == null || value.isEmpty ? 'Insira sua senha' : null,
                           ),
                           const SizedBox(height: 24),
                           CustomButton(
@@ -84,11 +76,9 @@ class LoginScreen extends StatelessWidget {
                                     passwordController.text,
                                   );
                                   Navigator.pushReplacementNamed(context, '/home');
-                                } catch (e, stackTrace) {
-                                  print('Erro ao fazer login: $e');
-                                  print('Stack trace: $stackTrace');
+                                } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Erro ao entrar: $e')),
+                                    SnackBar(content: Text(e.toString())),
                                   );
                                 }
                               }
@@ -99,13 +89,11 @@ class LoginScreen extends StatelessWidget {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                                MaterialPageRoute(builder: (_) => const RegisterScreen()),
                               );
                             },
-                            child: Text(
-                              'Não tem conta? Registre-se',
-                              style: TextStyle(color: theme.colorScheme.primary),
-                            ),
+                            child: Text('Não tem conta? Registre-se',
+                                style: TextStyle(color: theme.colorScheme.primary)),
                           ),
                         ],
                       ),

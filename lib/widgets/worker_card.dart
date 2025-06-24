@@ -1,3 +1,4 @@
+import 'package:appservico/screens/profile/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/worker_model.dart';
@@ -5,13 +6,11 @@ import '../../services/worker_service.dart';
 
 class WorkerCard extends StatelessWidget {
   final Worker worker;
-  final VoidCallback onFavoritePressed;
   final VoidCallback? onTap;
 
   const WorkerCard({
     super.key,
     required this.worker,
-    required this.onFavoritePressed,
     this.onTap,
   });
 
@@ -24,7 +23,8 @@ class WorkerCard extends StatelessWidget {
       child: Card(
         elevation: 3,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        // REMOVI a margem vertical para evitar espaçamento duplicado
+        margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -66,12 +66,21 @@ class WorkerCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      worker.isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: worker.isFavorite ? Colors.red : theme.iconTheme.color,
-                    ),
-                    onPressed: onFavoritePressed,
+                  Consumer<UserService>(
+                    builder: (context, userService, _) {
+                      final isFavorite = userService.favoriteWorkerIds.contains(worker.id);
+
+                      return IconButton(
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : theme.iconTheme.color,
+                        ),
+                        onPressed: () async {
+                          await Provider.of<WorkerService>(context, listen: false)
+                              .toggleFavorite(worker.id, userService);
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
