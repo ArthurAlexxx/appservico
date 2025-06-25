@@ -1,3 +1,4 @@
+import 'package:appservico/help_chat_bot_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -92,120 +93,144 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              children: [
-                Text(
-                  'ServiçoJá',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Crie sua conta para começar',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-                ),
-                const SizedBox(height: 32),
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        children: [
-                          CustomTextField(
-                            controller: nameController,
-                            label: 'Nome Completo',
-                            validator: (value) =>
-                                value == null || value.isEmpty ? 'Insira seu nome' : null, suffixIcon: null,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: emailController,
-                            label: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) return 'Insira seu email';
-                              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                              if (!emailRegex.hasMatch(value)) return 'Email inválido';
-                              return null;
-                            }, suffixIcon: null,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: passwordController,
-                            label: 'Senha',
-                            obscureText: !_showPassword,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _showPassword ? Icons.visibility_off : Icons.visibility,
-                                color: theme.colorScheme.primary,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _showPassword = !_showPassword;
-                                });
-                              },
-                            ),
-                            validator: (value) => value == null || value.length < 6
-                                ? 'Senha deve ter no mínimo 6 caracteres'
-                                : null,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: phoneController,
-                            label: 'Telefone',
-                            keyboardType: TextInputType.phone,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) return 'Insira o telefone';
-                              // Validação simples de telefone: só números e 10-11 dígitos
-                              final phoneRegex = RegExp(r'^\d{10,11}$');
-                              if (!phoneRegex.hasMatch(value)) return 'Telefone inválido';
-                              return null;
-                            }, suffixIcon: null,
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            value: accountType,
-                            items: const [
-                              DropdownMenuItem(value: 'user', child: Text('Usuário Comum')),
-                              DropdownMenuItem(value: 'worker', child: Text('Profissional')),
-                            ],
-                            onChanged: (value) => setState(() => accountType = value!),
-                            decoration: const InputDecoration(
-                              labelText: 'Tipo de Conta',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          _isLoading
-                              ? const CircularProgressIndicator()
-                              : CustomButton(
-                                  text: 'Registrar',
-                                  onPressed: () => _register(context),
-                                ),
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: _isLoading ? null : () => Navigator.pop(context),
-                            child: Text(
-                              'Já tem conta? Faça login',
-                              style: TextStyle(color: theme.colorScheme.primary),
-                            ),
-                          ),
-                        ],
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  children: [
+                    Text(
+                      'ServiçoJá',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Crie sua conta para começar',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                    ),
+                    const SizedBox(height: 32),
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Form(
+                          key: formKey,
+                          child: Column(
+                            children: [
+                              CustomTextField(
+                                controller: nameController,
+                                label: 'Nome Completo',
+                                validator: (value) =>
+                                    value == null || value.isEmpty ? 'Insira seu nome' : null,
+                                suffixIcon: null,
+                              ),
+                              const SizedBox(height: 16),
+                              CustomTextField(
+                                controller: emailController,
+                                label: 'Email',
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Insira seu email';
+                                  final emailRegex =
+                                      RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                  if (!emailRegex.hasMatch(value)) return 'Email inválido';
+                                  return null;
+                                },
+                                suffixIcon: null,
+                              ),
+                              const SizedBox(height: 16),
+                              CustomTextField(
+                                controller: passwordController,
+                                label: 'Senha',
+                                obscureText: !_showPassword,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _showPassword ? Icons.visibility_off : Icons.visibility,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _showPassword = !_showPassword;
+                                    });
+                                  },
+                                ),
+                                validator: (value) => value == null || value.length < 6
+                                    ? 'Senha deve ter no mínimo 6 caracteres'
+                                    : null,
+                              ),
+                              const SizedBox(height: 16),
+                              CustomTextField(
+                                controller: phoneController,
+                                label: 'Telefone',
+                                keyboardType: TextInputType.phone,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Insira o telefone';
+                                  final phoneRegex = RegExp(r'^\d{10,11}$');
+                                  if (!phoneRegex.hasMatch(value)) return 'Telefone inválido';
+                                  return null;
+                                },
+                                suffixIcon: null,
+                              ),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                value: accountType,
+                                items: const [
+                                  DropdownMenuItem(value: 'user', child: Text('Usuário Comum')),
+                                  DropdownMenuItem(value: 'worker', child: Text('Profissional')),
+                                ],
+                                onChanged: (value) => setState(() => accountType = value!),
+                                decoration: const InputDecoration(
+                                  labelText: 'Tipo de Conta',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              _isLoading
+                                  ? const CircularProgressIndicator()
+                                  : CustomButton(
+                                      text: 'Registrar',
+                                      onPressed: () => _register(context),
+                                    ),
+                              const SizedBox(height: 16),
+                              TextButton(
+                                onPressed: _isLoading ? null : () => Navigator.pop(context),
+                                child: Text(
+                                  'Já tem conta? Faça login',
+                                  style: TextStyle(color: theme.colorScheme.primary),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+
+            // Botão flutuante de ajuda com IA
+            Positioned(
+              bottom: 24,
+              right: 24,
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HelpChatBotPage()),
+                  );
+                },
+                backgroundColor: theme.colorScheme.primary,
+                child: const Icon(Icons.chat),
+                tooltip: 'Ajuda com IA',
+              ),
+            ),
+          ],
         ),
       ),
     );

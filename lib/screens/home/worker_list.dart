@@ -31,7 +31,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       await Provider.of<UserService>(context, listen: false).loadUserData();
     } catch (e) {
       debugPrint('Erro ao carregar dados: $e');
-      // Opcional: mostrar snackbar ou mensagem de erro para o usuário
     } finally {
       setState(() => _isLoading = false);
     }
@@ -77,6 +76,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             tooltip: 'Filtrar',
             icon: const Icon(Icons.filter_list),
             onPressed: _openFilter,
+            color: Colors.white,
           ),
         ],
         backgroundColor: theme.colorScheme.primary,

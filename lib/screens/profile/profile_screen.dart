@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'user_service.dart';
 import '../../services/auth_service.dart';
+import 'package:appservico/help_chat_bot_page.dart';  // <-- Importa a página do chatbot
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -41,7 +42,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () async {
               Navigator.of(ctx).pop();
 
-              // ✅ Logout seguro com AuthService
               final authService = Provider.of<AuthService>(context, listen: false);
               await authService.signOut();
 
@@ -152,6 +152,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+
+      // Botão flutuante de ajuda com IA
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const HelpChatBotPage()),
+          );
+        },
+        backgroundColor: theme.colorScheme.primary,
+        child: const Icon(Icons.chat),
+        tooltip: 'Ajuda com IA',
+      ),
     );
   }
 }

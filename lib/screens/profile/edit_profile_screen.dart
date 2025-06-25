@@ -18,6 +18,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late String _email;
   late String _phone;
   File? _profileImageFile;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -30,7 +31,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80, 
+      maxWidth: 600, 
+    );
     if (pickedFile != null) {
       setState(() {
         _profileImageFile = File(pickedFile.path);
@@ -39,32 +44,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      final userService = Provider.of<UserService>(context, listen: false);
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        if (_profileImageFile != null) {
-          await userService.uploadProfilePhotoFromFile(_profileImageFile!);
-        }
+    _formKey.currentState!.save();
 
-        await userService.updateProfile(
-          newName: _name,
-          newEmail: _email,
-          newPhone: _phone,
-        );
+    setState(() => _isSaving = true);
+    final userService = Provider.of<UserService>(context, listen: false);
 
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil atualizado com sucesso!')),
-        );
-        Navigator.pop(context);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao atualizar perfil: $e')),
-        );
+    try {
+      if (_profileImageFile != null) {
+        await userService.uploadProfilePhotoFromFile(_profileImageFile!);
       }
+
+      await userService.updateProfile(
+        newName: _name,
+        newEmail: _email,
+        newPhone: _phone,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perfil atualizado com sucesso!')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao atualizar perfil: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -74,71 +83,127 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar Perfil')),
+      appBar: AppBar(
+        title: const Text('Editar Perfil'),
+        centerTitle: true,
+        backgroundColor: theme.colorScheme.primary,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              Center(
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundImage: _profileImageFile != null
-                          ? FileImage(_profileImageFile!)
-                          : (userService.photoUrl.isNotEmpty
-                              ? NetworkImage(userService.photoUrl)
-                              : const AssetImage('assets/images/default_avatar.png'))
-                          as ImageProvider,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: InkWell(
-                        onTap: _pickImage,
-                        child: const CircleAvatar(
-                          radius: 18,
-                          backgroundColor: Colors.blue,
-                          child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 65,
+                    backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+                    backgroundImage: _profileImageFile != null
+                        ? FileImage(_profileImageFile!)
+                        : (userService.photoUrl.isNotEmpty
+                            ? NetworkImage(userService.photoUrl)
+                            : const AssetImage('assets/images/default_avatar.png'))
+                            as ImageProvider,
+                  ),
+                  Positioned(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(30),
+                      onTap: _pickImage,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.primary,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
                         ),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 22),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
+
+              // Nome
               TextFormField(
                 initialValue: _name,
-                decoration: const InputDecoration(labelText: 'Nome'),
-                onSaved: (value) => _name = value ?? '',
-                validator: (value) => value!.isEmpty ? 'Informe seu nome' : null,
+                decoration: InputDecoration(
+                  labelText: 'Nome',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.person),
+                ),
+                onSaved: (value) => _name = value!.trim(),
+                validator: (value) => value == null || value.trim().isEmpty ? 'Informe seu nome' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+
+              // Email
               TextFormField(
                 initialValue: _email,
-                decoration: const InputDecoration(labelText: 'E-mail'),
-                onSaved: (value) => _email = value ?? '',
-                validator: (value) => value!.contains('@') ? null : 'E-mail inválido',
+                decoration: InputDecoration(
+                  labelText: 'E-mail',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                onSaved: (value) => _email = value!.trim(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Informe seu e-mail';
+                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                  if (!emailRegex.hasMatch(value.trim())) return 'E-mail inválido';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+
+              // Telefone
               TextFormField(
                 initialValue: _phone,
-                decoration: const InputDecoration(labelText: 'Telefone'),
-                onSaved: (value) => _phone = value ?? '',
-                validator: (value) => value!.length < 10 ? 'Telefone inválido' : null,
+                decoration: InputDecoration(
+                  labelText: 'Telefone',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.phone),
+                ),
+                keyboardType: TextInputType.phone,
+                onSaved: (value) => _phone = value!.trim(),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return 'Informe seu telefone';
+                  if (value.trim().length < 10) return 'Telefone inválido';
+                  return null;
+                },
               ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: _saveProfile,
-                icon: const Icon(Icons.save),
-                label: const Text('Salvar'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  textStyle: const TextStyle(fontSize: 16),
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
+              const SizedBox(height: 40),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(
+                    _isSaving ? 'Salvando...' : 'Salvar',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  onPressed: _isSaving ? null : _saveProfile,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 3,
+                  ),
                 ),
               ),
             ],

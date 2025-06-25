@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/worker_model.dart';
-import '../home/worker_detail_screen.dart';  // Ajuste o caminho conforme sua estrutura
+import '../home/worker_detail_screen.dart';
 
 class WorkerFilterScreen extends StatefulWidget {
   final List<Worker> workers;
