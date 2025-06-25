@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:provider/provider.dart';
+
 import '../../models/worker_model.dart';
 import '../../services/worker_service.dart';
 import '../profile/user_service.dart';
@@ -17,31 +21,30 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
   final _nameController = TextEditingController();
   final _professionController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _imageUrlController = TextEditingController();
   final _servicesController = TextEditingController();
   final _locationController = TextEditingController();
   final _whatsappController = TextEditingController();
-  final List<TextEditingController> _portfolioControllers = [TextEditingController()];
+
+  File? _selectedImage;
+  String? _uploadedImageUrl;
+
+  List<File> _portfolioImages = [];
+  List<String> _uploadedPortfolioUrls = [];
 
   bool _isLoading = false;
-  int _photoLimit = 5; 
+  int _photoLimit = 5;
 
   late final SubscriptionService _subscriptionService;
 
   @override
   void initState() {
     super.initState();
-
     final userService = Provider.of<UserService>(context, listen: false);
     _nameController.text = userService.name;
     _whatsappController.text = userService.phone;
 
     _subscriptionService = Provider.of<SubscriptionService>(context, listen: false);
-
-    // Inicializa o limite conforme plano atual
     _updatePhotoLimit(_subscriptionService.currentPlan);
-
-    // Escuta mudanças do plano para atualizar limite
     _subscriptionService.addListener(_subscriptionListener);
   }
 
@@ -50,42 +53,93 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
   }
 
   void _updatePhotoLimit(String plan) {
-    int newLimit = 5;
-    if (plan == 'free') {
-      newLimit = 5;
-    } else if (plan == 'pro') {
-      newLimit = 15;
-    } else if (plan == 'premium') {
-      newLimit = 999;
-    }
-
+    int newLimit = plan == 'pro' ? 15 : plan == 'premium' ? 999 : 5;
     if (_photoLimit != newLimit) {
-      setState(() {
-        _photoLimit = newLimit;
-      });
+      setState(() => _photoLimit = newLimit);
     }
   }
 
   @override
   void dispose() {
     _subscriptionService.removeListener(_subscriptionListener);
-
     _nameController.dispose();
     _professionController.dispose();
     _descriptionController.dispose();
-    _imageUrlController.dispose();
     _servicesController.dispose();
     _locationController.dispose();
     _whatsappController.dispose();
-    for (var c in _portfolioControllers) {
-      c.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+
+    setState(() => _selectedImage = File(pickedFile.path));
+
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final ref = FirebaseStorage.instance.ref().child('workers/$fileName');
+
+    try {
+      await ref.putFile(_selectedImage!);
+      final url = await ref.getDownloadURL();
+      setState(() => _uploadedImageUrl = url);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Imagem enviada com sucesso!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao enviar imagem: $e')),
+      );
+    }
+  }
+
+  Future<void> _pickPortfolioImages() async {
+    final picker = ImagePicker();
+    final pickedFiles = await picker.pickMultiImage();
+
+    if (pickedFiles.isEmpty) return;
+
+    if ((_portfolioImages.length + pickedFiles.length) > _photoLimit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Você pode enviar até $_photoLimit imagens.')),
+      );
+      return;
     }
 
-    super.dispose();
+    setState(() {
+      _portfolioImages.addAll(pickedFiles.map((e) => File(e.path)));
+    });
+  }
+
+  Future<void> _uploadPortfolioImages() async {
+    _uploadedPortfolioUrls.clear();
+
+    for (var image in _portfolioImages) {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.path.split('/').last}';
+      final ref = FirebaseStorage.instance.ref().child('portfolio/$fileName');
+
+      try {
+        await ref.putFile(image);
+        final url = await ref.getDownloadURL();
+        _uploadedPortfolioUrls.add(url);
+      } catch (e) {
+        throw Exception('Erro ao enviar imagem do portfólio: $e');
+      }
+    }
   }
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_uploadedImageUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, envie uma imagem de perfil.')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -100,14 +154,11 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
       return;
     }
 
-    final portfolioImages = _portfolioControllers
-        .map((c) => c.text.trim())
-        .where((url) => url.isNotEmpty)
-        .toList();
-
-    if (portfolioImages.length > _photoLimit) {
+    try {
+      await _uploadPortfolioImages();
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Você ultrapassou o limite de $_photoLimit imagens no portfólio.')),
+        SnackBar(content: Text('$e')),
       );
       setState(() => _isLoading = false);
       return;
@@ -119,7 +170,7 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
       name: userService.name,
       profession: _professionController.text.trim(),
       description: _descriptionController.text.trim(),
-      imageUrl: _imageUrlController.text.trim(),
+      imageUrl: _uploadedImageUrl!,
       services: _servicesController.text
           .split(',')
           .map((s) => s.trim())
@@ -127,7 +178,7 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
           .toList(),
       location: _locationController.text.trim(),
       whatsappNumber: userService.phone,
-      portfolioImages: portfolioImages,
+      portfolioImages: _uploadedPortfolioUrls,
       isFeatured: false,
     );
 
@@ -163,12 +214,13 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
           filled: true,
           fillColor: theme.colorScheme.surface.withOpacity(0.05),
         ),
-        validator: validator ?? (value) {
-          if (value == null || value.isEmpty) {
-            return 'Por favor, preencha este campo';
-          }
-          return null;
-        },
+        validator: validator ??
+            (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor, preencha este campo';
+              }
+              return null;
+            },
       ),
     );
   }
@@ -176,7 +228,6 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currentCount = _portfolioControllers.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -194,16 +245,26 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
                 _buildTextField(_nameController, 'Nome', enabled: false),
                 _buildTextField(_professionController, 'Profissão'),
                 _buildTextField(_descriptionController, 'Descrição', maxLines: 3),
-                _buildTextField(
-                  _imageUrlController,
-                  'URL da Imagem (opcional)',
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty && !Uri.parse(value).isAbsolute) {
-                      return 'Insira uma URL válida';
-                    }
-                    return null;
-                  },
+
+                const SizedBox(height: 12),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Imagem de perfil',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
+                const SizedBox(height: 8),
+                _selectedImage != null
+                    ? Image.file(_selectedImage!, height: 120)
+                    : const Text('Nenhuma imagem selecionada.'),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _pickAndUploadImage,
+                  icon: const Icon(Icons.upload),
+                  label: const Text('Selecionar imagem'),
+                ),
+
                 _buildTextField(_servicesController, 'Serviços (separados por vírgula)'),
                 _buildTextField(_locationController, 'Localização (cidade)'),
                 _buildTextField(
@@ -211,53 +272,38 @@ class _RegisterWorkerScreenState extends State<RegisterWorkerScreen> {
                   'Número do WhatsApp (ex: 11999999999)',
                   enabled: false,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor, preencha este campo';
-                    }
-                    final regex = RegExp(r'^\d{10,11}$');
-                    if (!regex.hasMatch(value)) {
-                      return 'Número inválido. Use o DDD + número (ex: 11999999999)';
+                    if (value == null || value.isEmpty) return 'Preencha o número';
+                    if (!RegExp(r'^\d{10,11}$').hasMatch(value)) {
+                      return 'Número inválido. Use o DDD + número';
                     }
                     return null;
                   },
                 ),
+
                 const SizedBox(height: 16),
                 Text(
-                  'Links do Portfólio (máximo $_photoLimit imagens)',
+                  'Imagens do Portfólio (máximo $_photoLimit)',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                ..._portfolioControllers.map((controller) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: TextFormField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          hintText: 'https://exemplo.com/imagem.jpg',
-                          labelText: 'Imagem do Portfólio',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty && !Uri.parse(value).isAbsolute) {
-                            return 'Insira uma URL válida';
-                          }
-                          return null;
-                        },
-                      ),
-                    )),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _portfolioImages
+                      .map((img) => Image.file(img, height: 100, width: 100, fit: BoxFit.cover))
+                      .toList(),
+                ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
-                  onPressed: currentCount >= _photoLimit
+                  onPressed: _portfolioImages.length >= _photoLimit
                       ? null
-                      : () {
-                          setState(() {
-                            _portfolioControllers.add(TextEditingController());
-                          });
-                        },
-                  icon: const Icon(Icons.add),
-                  label: Text(currentCount >= _photoLimit
-                      ? 'Limite de imagens atingido'
-                      : 'Adicionar imagem'),
+                      : _pickPortfolioImages,
+                  icon: const Icon(Icons.add_photo_alternate),
+                  label: Text(_portfolioImages.length >= _photoLimit
+                      ? 'Limite atingido'
+                      : 'Selecionar imagens'),
                 ),
+
                 const SizedBox(height: 24),
                 _isLoading
                     ? const CircularProgressIndicator()

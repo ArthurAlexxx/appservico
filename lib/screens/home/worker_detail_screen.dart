@@ -103,7 +103,7 @@ class WorkerDetailScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Portfólio
+            // Portfólio com clique para tela cheia
             if (worker.portfolioImages.isNotEmpty)
               _buildSectionCard(
                 context,
@@ -116,18 +116,33 @@ class WorkerDetailScreen extends StatelessWidget {
                     separatorBuilder: (_, __) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
                       final imgUrl = worker.portfolioImages[index];
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          imgUrl,
-                          width: 140,
-                          height: 140,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: Colors.grey[300],
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => Scaffold(
+                              appBar: AppBar(backgroundColor: Colors.black),
+                              backgroundColor: Colors.black,
+                              body: Center(
+                                child: InteractiveViewer(
+                                  child: Image.network(imgUrl, fit: BoxFit.contain),
+                                ),
+                              ),
+                            ),
+                          ));
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            imgUrl,
                             width: 140,
                             height: 140,
-                            child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey[300],
+                              width: 140,
+                              height: 140,
+                              child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                            ),
                           ),
                         ),
                       );
